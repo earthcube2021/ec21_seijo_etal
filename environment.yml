@@ -1,0 +1,12 @@
+name: py_test
+
+dependencies:
+  - python=3.8
+  - cartopy
+  - matplotlib
+  - numpy
+  - pandas
+  - requests
+  - pip
+  - pip:
+    - svgpath2mpl
