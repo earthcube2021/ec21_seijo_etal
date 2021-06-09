@@ -20,11 +20,20 @@ import cartopy.feature as cft
 from cartopy.mpl.gridliner import LONGITUDE_FORMATTER, LATITUDE_FORMATTER
 
 from svgpath2mpl import parse_path
+%matplotlib inline
+
+# Autoreload extension
+if 'autoreload' not in get_ipython().extension_manager.loaded:
+    %load_ext autoreload   
+%autoreload 2
+
+# Progress bar
+from tqdm.notebook import tqdm, trange
+import time  
 
 #prevent warnings from showing on screen
 import warnings
 warnings.filterwarnings('ignore')
-
 
 # **get_TCs_byNameYear**
 # 
@@ -557,3 +566,94 @@ plt.subplots_adjust(left=0.1,
                     wspace=0.4, 
                     hspace=0.4)
 plt.show()
+
+
+#map sea-ice and argo float locations
+#This function downloads SOSE sea-ice (see: get_SOSE_SeaIce), parses the data (see: parse_into_df_SeaIce), then downloads and parses Argo profiles (see: get_selection_profiles) and generates a map of sea-ice fraction and Argo float locations.
+   # presRange = '[0,50]', defines pressure range of interest for Argo profiles.
+  
+   # plev_presRange = 30, is a value in the middle of the pressure range of interest.
+  
+   # color_map = plt.cm.get_cmap('Blues'), select colormap of preference.
+
+def map_seaice_argo(presRange,plev_presRange,color_map):
+    reversed_color_map = color_map.reversed()
+    for l in np.arange(0,len(date_ALL)):
+        fig = plt.figure(figsize=(15,15))
+        ax = plt.axes(projection=ccrs.SouthPolarStereo())
+        gl = ax.gridlines(draw_labels=True,color='black')
+        gl.xlabels_top = False
+        gl.ylabels_right = False
+        gl.xformatter = LONGITUDE_FORMATTER
+        gl.yformatter = LATITUDE_FORMATTER
+        ax.coastlines()
+        ax.add_feature(cft.LAND)
+        ax.add_feature(cft.OCEAN)
+        ax.set_extent([-180, 180, -90, -35], crs=ccrs.PlateCarree())
+
+        # dates for argo profiles
+        bfr_startDate = datetime.strptime(date_ALL[0], '%Y-%m-%d')
+        bfr_startDate -= timedelta(days=delta_argo)
+        bfr_endDate = datetime.strptime(date_ALL[0], '%Y-%m-%d')
+        bfr_endDate += timedelta(days=delta_argo)
+
+        str_flag = True
+        for i in tqdm(np.arange(0,len(xreg_ALL)-1)):
+            time.sleep(0.01)
+            for j in np.arange(0,len(yreg_ALL)-1):
+                try:
+                    selectionSeaIce  = get_SOSE_sea_ice(xreg=xreg_ALL[i:i+2],yreg=yreg_ALL[j:j+2],date=date_ALL[l],printUrl=False)
+                    df_SeaIce       = parse_into_df_SeaIce(selectionSeaIce)
+                    plt.scatter(df_SeaIce['lon'],df_SeaIce['lat'],transform=ccrs.Geodetic(),s=5,cmap=reversed_color_map,c=df_SeaIce['value'])
+
+                except:
+                    pass
+                # add Argo profiles to the plot and print float number
+                # region
+                shape = [[[max(xreg_ALL[i:i+2]),min(yreg_ALL[j:j+2])],[max(xreg_ALL[i:i+2]),max(yreg_ALL[j:j+2])],
+                          [min(xreg_ALL[i:i+2]),max(yreg_ALL[j:j+2])],[min(xreg_ALL[i:i+2]),min(yreg_ALL[j:j+2])],
+                          [max(xreg_ALL[i:i+2]),min(yreg_ALL[j:j+2])]]]
+                strShape = str(shape).replace(' ', '')
+
+                bfr_selectionProfiles     = get_selection_profiles(bfr_startDate, bfr_endDate, strShape, presRange,printUrl=False)
+
+                if len(bfr_selectionProfiles) > 0:
+                    bfr_selectionDf = parse_into_df(bfr_selectionProfiles)
+                    bfr_selectionDf = bfr_selectionDf.drop_duplicates('profile_id')
+                    plt.plot(bfr_selectionDf['lon'],bfr_selectionDf['lat'],'+r',transform=ccrs.Geodetic())                
+                    bfr2 = bfr_selectionDf.loc[bfr_selectionDf['position_qc'] == 8]
+                    if len(bfr2) > 0:
+                        plt.plot(bfr2['lon'],bfr2['lat'],'or',transform=ccrs.Geodetic())
+                        if str_flag:
+                            print('>>>> Profile ID for profiles under ice (i.e. platformNumber_profileNumber) <<<<')
+                            str_flag = False
+                        print(bfr2['profile_id'])
+        plt.title('SOSE sea-ice fraction and Argo profile locations (+: QC =1, o: QC = 8)',fontsize=20)              
+        colorbar =plt.colorbar(orientation='vertical',fraction=0.05,pad=0.02)
+        colorbar.ax.tick_params(labelsize=15)
+        colorbar.set_label('sea-ice fraction', fontsize=16)
+
+### plot_argo_QC_location###
+   # This function plots the location of a user specified Argo float colorcoded by the value of its QC flag at each position. The function uses parsed data(parse_into_df_plev) queried via get_profile_platform. 
+   
+   # lon: variable name for longitudes of each recorded position of the Argo float. E.g. platformDf_plev['lon']
+   
+   # lat: variable name for latitudes of each recorded position of the Argo float. E.g. platformDf_plev['lat']
+   
+   # qc: variable name for the QC flag value at each recorded position of the Argo float. E.g. platformDf_plev['position_qc']
+
+
+def plot_argo_QC_location(lon,lat,qc):
+    fig, (ax) = plt.subplots(1,1, figsize=(15,10))
+    plt.scatter(lon,lat,c=qc,s=80)
+    plt.colorbar()
+    # change font
+    for tick in ax.xaxis.get_majorticklabels():  # example for xaxis
+        tick.set_fontsize(24) 
+    for tick in ax.yaxis.get_majorticklabels():  # example for xaxis
+        tick.set_fontsize(24)
+    ax.set_ylabel('Degree latitude',size=24,labelpad=0)
+    ax.set_xlabel('Degree longitude',size=24,labelpad=0)
+    plt.title('Float #'+platform_number,size=24)
+    plt.grid()
+    plt.show()
