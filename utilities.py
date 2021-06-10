@@ -20,12 +20,6 @@ import cartopy.feature as cft
 from cartopy.mpl.gridliner import LONGITUDE_FORMATTER, LATITUDE_FORMATTER
 
 from svgpath2mpl import parse_path
-%matplotlib inline
-
-# Autoreload extension
-if 'autoreload' not in get_ipython().extension_manager.loaded:
-    %load_ext autoreload   
-%autoreload 2
 
 # Progress bar
 from tqdm.notebook import tqdm, trange
@@ -401,8 +395,6 @@ def map_TC_and_Argo(df, delta_days, dx, dy, presRange,printing=False,printing_fl
                     prof_afterTC.append([])
     plt.title('Tropical Cyclone track and location of Argo profiles (magenta)',fontsize=20)
     plt.show()
-    if printing:
-        fig.savefig('./Figures/'+printing_flag+'_map.png')
                 
     return prof_beforeTC,prof_afterTC
 
@@ -446,7 +438,8 @@ def plot_prof(dataX,dataY,xlab,ylab,xlim,ylim,label,col):
 
 # Print ID (i.e. platformNumber_cycleNumber) of oceanic profiles in each item of two lists (prof_beforeTC,prof_afterTC), when the item (i.e. the item that corresponds to a certain index) has profiles in both lists. This function was build to plot profiles before the TC in red and after in black, i.e. when the two lists are indeed for profiles before/after the TC, the plot is done only for locations along the tropical cyclone track of interest where co-located oceanic profiles (stored in prof_beforeTC,prof_afterTC for the TC of interest) are available both before and after the cyclone.
 def plot_prof_pairs(prof_beforeTC,prof_afterTC,presRange=[0,100]):
-    for x,y in zip(prof_beforeTC,prof_afterTC):
+    for x,y in zip(tqdm(prof_beforeTC),prof_afterTC):
+        time.sleep(0.01)
         if any(x) and any(y):
             print('-------------')
             # temperature
@@ -480,93 +473,91 @@ def plot_prof_pairs(prof_beforeTC,prof_afterTC,presRange=[0,100]):
 
 # **plot_SeaIce_argo_QC_temp_sal**
 #After adding empty profiles to the float history as needed, we will generate a multi-panel figure showing: a) the time series of the float's position QC flag value and co-located fraction of sea-ice from SOSE, b) ocean temperature profiles in time as recorded by the float and, c) ocean salinity profiles in time as recorded by the float:
-def plot_SeaIce_argo_QC_temp_sal():
-	temp2d_new = np.empty((len(plevIntp),1))
-	psal2d_new = np.empty((len(plevIntp),1))
-	temp2d_new[:,0] = temp2d[:,0]
-	psal2d_new[:,0] = psal2d[:,0]
+def plot_SeaIce_argo_QC_temp_sal(plevIntp,temp2d,psal2d,platformDf_plev,tdelta,seaice_val,platform_number):
+    temp2d_new = np.empty((len(plevIntp),1))
+    psal2d_new = np.empty((len(plevIntp),1))
+    temp2d_new[:,0] = temp2d[:,0]
+    psal2d_new[:,0] = psal2d[:,0]
 
-	time_new = pd.Series(pd.to_datetime(platformDf_plev['date'][0]))
-	for i in np.arange(1,len(platformDf_plev['date'])):
- 	       nnans_days = (pd.to_datetime(platformDf_plev['date'][i])-	pd.to_datetime(platformDf_plev['date'][i-1])).days
-	        # in the following we add 1 profile of nan in between profiles that are too far apart in time 
- 	       # (if more profiles of nan are needed, then you need to edit np.empty and the number of iterations in j-loop)
-	        	if nnans_days>tdelta:
+    time_new = pd.Series(pd.to_datetime(platformDf_plev['date'][0]))
+    for i in np.arange(1,len(platformDf_plev['date'])):
+            nnans_days = (pd.to_datetime(platformDf_plev['date'][i])-pd.to_datetime(platformDf_plev['date'][i-1])).days
+            # in the following we add 1 profile of nan in between profiles that are too far apart in time 
+            # (if more profiles of nan are needed, then you need to edit np.empty and the number of iterations in j-loop)
+            if nnans_days>tdelta:
 
-	            temp2d_new = np.append(temp2d_new,np.nan*np.empty((len(plevIntp),1)),axis=1)
-	            psal2d_new = np.append(psal2d_new,np.nan*np.empty((len(plevIntp),1)),axis=1)
-            
-	            bfr_date = pd.to_datetime(platformDf_plev['date'][i-1])
-	            # this loop is now only looping once as we only need to add one profile of nans 
-	            for j in np.arange(1,2,1):
-	                bfr_date += timedelta(days=1)
-	                time_new = time_new.append(pd.Series(bfr_date))
+                temp2d_new = np.append(temp2d_new,np.nan*np.empty((len(plevIntp),1)),axis=1)
+                psal2d_new = np.append(psal2d_new,np.nan*np.empty((len(plevIntp),1)),axis=1)
 
-	        temp2d_new = np.append(temp2d_new,temp2d[:,np.newaxis,i],axis=1)
-	        psal2d_new = np.append(psal2d_new,psal2d[:,np.newaxis,i],axis=1)
-	        time_new = time_new.append(pd.Series(pd.to_datetime(platformDf_plev['date'][i])))
-        
-	plt.figure(figsize=(30, 20))
-	for i in tqdm([1,2,3]):
-	    time.sleep(0.01)
-	    if i==1:
-	        ax = plt.subplot(311)
-	        color = 'tab:red'
-        		plt.plot(pd.to_datetime(platformDf_plev['date']),platformDf_plev['position_qc'],'sr',markersize=14)
-        		ax.set_ylabel('Position QC flag',size=24,labelpad=0)
-       		ax.yaxis.label.set_color('red')
-       		ax.tick_params(axis='y', colors='red')
-        		ax2 = ax.twinx()
-        		color = 'tab:blue'
-        		ax2.plot(pd.to_datetime(platformDf_plev['date']),np.stack( seaice_val ),'ob',markersize=12)
-        		ax2.set_ylabel('SOSE sea-ice fraction',size=24,labelpad=0)
-        		ax2.yaxis.label.set_color('blue')
-        		ax2.tick_params(axis='y', colors='blue')
-        		plt.title('Float #'+platform_number,size=24)
-        		plt.grid()
-        
-    	    if i==2:
-        		ax = plt.subplot(312)
-        		mt = np.ma.masked_where(np.isnan(temp2d_new),temp2d_new)
-        		plt.pcolor(pd.to_datetime(time_new),plevIntp,mt,cmap='plasma')
-        		#plt.pcolormesh(pd.to_datetime(platformDf_plev['date']),plevIntp,temp2d) # pd.Series(np.arange(0,79,1))
-        		#plt.title('Temperature, degC',size=24)
-        		cbar = plt.colorbar(orientation="horizontal", pad=0.2)
-        		cbar.ax.tick_params(labelsize=24)
-        		cbar.set_label('Temperature, degC',fontsize=24)
-        
-    	    if i==3:
-        		ax = plt.subplot(313)
-        		ms = np.ma.masked_where(np.isnan(psal2d_new),psal2d_new)
-        		plt.pcolor(pd.to_datetime(time_new),plevIntp,ms,cmap='viridis_r')
-        		# plt.pcolor(pd.to_datetime(platformDf_plev['date']),plevIntp,psal2d) # pd.Series(np.arange(0,79,1))
-        		#plt.title('Salinity, psu',size=24)
-        		cbar = plt.colorbar(orientation="horizontal", pad=0.2)
-        		cbar.ax.tick_params(labelsize=24)
-        		cbar.set_label('Salinity, PSU',fontsize=24)
-        
-    	    if i==2 or i==3:
-        		plt.gca().invert_yaxis()
-        		ax.set_ylabel('Pressure, dbar',size=24,labelpad=0)
-        
-        
-    	# change font
-    	    for tick in ax.xaxis.get_majorticklabels():  # example for xaxis
-        	    tick.set_fontsize(24) 
-    	    for tick in ax.yaxis.get_majorticklabels():  # example for xaxis
+                bfr_date = pd.to_datetime(platformDf_plev['date'][i-1])
+                # this loop is now only looping once as we only need to add one profile of nans 
+                for j in np.arange(1,2,1):
+                    bfr_date += timedelta(days=1)
+                    time_new = time_new.append(pd.Series(bfr_date))
+
+            temp2d_new = np.append(temp2d_new,temp2d[:,np.newaxis,i],axis=1)
+            psal2d_new = np.append(psal2d_new,psal2d[:,np.newaxis,i],axis=1)
+            time_new = time_new.append(pd.Series(pd.to_datetime(platformDf_plev['date'][i])))
+
+    plt.figure(figsize=(30, 20))
+    for i in [1,2,3]:
+        if i==1:
+            ax = plt.subplot(311)
+            color = 'tab:red'
+            plt.plot(pd.to_datetime(platformDf_plev['date']),platformDf_plev['position_qc'],'sr',markersize=14)
+            ax.set_ylabel('Position QC flag',size=24,labelpad=0)
+            ax.yaxis.label.set_color('red')
+            ax.tick_params(axis='y', colors='red')
+            ax2 = ax.twinx()
+            color = 'tab:blue'
+            ax2.plot(pd.to_datetime(platformDf_plev['date']),np.stack( seaice_val ),'ob',markersize=12)
+            ax2.set_ylabel('SOSE sea-ice fraction',size=24,labelpad=0)
+            ax2.yaxis.label.set_color('blue')
+            ax2.tick_params(axis='y', colors='blue')
+            plt.title('Float #'+platform_number,size=24)
+            plt.grid()
+
+        if i==2:
+            ax = plt.subplot(312)
+            mt = np.ma.masked_where(np.isnan(temp2d_new),temp2d_new)
+            plt.pcolor(pd.to_datetime(time_new),plevIntp,mt,cmap='plasma')
+            #plt.pcolormesh(pd.to_datetime(platformDf_plev['date']),plevIntp,temp2d) # pd.Series(np.arange(0,79,1))
+            #plt.title('Temperature, degC',size=24)
+            cbar = plt.colorbar(orientation="horizontal", pad=0.2)
+            cbar.ax.tick_params(labelsize=24)
+            cbar.set_label('Temperature, degC',fontsize=24)
+
+        if i==3:
+            ax = plt.subplot(313)
+            ms = np.ma.masked_where(np.isnan(psal2d_new),psal2d_new)
+            plt.pcolor(pd.to_datetime(time_new),plevIntp,ms,cmap='viridis_r')
+            # plt.pcolor(pd.to_datetime(platformDf_plev['date']),plevIntp,psal2d) # pd.Series(np.arange(0,79,1))
+            #plt.title('Salinity, psu',size=24)
+            cbar = plt.colorbar(orientation="horizontal", pad=0.2)
+            cbar.ax.tick_params(labelsize=24)
+            cbar.set_label('Salinity, PSU',fontsize=24)
+
+        if i==2 or i==3:
+            plt.gca().invert_yaxis()
+            ax.set_ylabel('Pressure, dbar',size=24,labelpad=0)
+
+
+        # change font
+        for tick in ax.xaxis.get_majorticklabels():  # example for xaxis
+            tick.set_fontsize(24) 
+        for tick in ax.yaxis.get_majorticklabels():  # example for xaxis
             tick.set_fontsize(24)
-    	    for tick in ax2.yaxis.get_majorticklabels():  # example for xaxis
+        for tick in ax2.yaxis.get_majorticklabels():  # example for xaxis
             tick.set_fontsize(24)
-    	    plt.xlim([min(pd.to_datetime(platformDf_plev['date'])),max(pd.to_datetime(platformDf_plev['date']))])
-    
-plt.subplots_adjust(left=0.1,
-                    bottom=0.1, 
-                    right=0.9, 
-                    top=0.9, 
-                    wspace=0.4, 
-                    hspace=0.4)
-plt.show()
+        plt.xlim([min(pd.to_datetime(platformDf_plev['date'])),max(pd.to_datetime(platformDf_plev['date']))])
 
+    plt.subplots_adjust(left=0.1,
+                        bottom=0.1, 
+                        right=0.9, 
+                        top=0.9, 
+                        wspace=0.4, 
+                        hspace=0.4)
+    plt.show()
 
 #map sea-ice and argo float locations
 #This function downloads SOSE sea-ice (see: get_SOSE_SeaIce), parses the data (see: parse_into_df_SeaIce), then downloads and parses Argo profiles (see: get_selection_profiles) and generates a map of sea-ice fraction and Argo float locations.
@@ -576,7 +567,7 @@ plt.show()
   
    # color_map = plt.cm.get_cmap('Blues'), select colormap of preference.
 
-def map_seaice_argo(presRange,plev_presRange,color_map):
+def map_seaice_argo(date_ALL,yreg_ALL,xreg_ALL,delta_argo,presRange,plev_presRange,color_map):
     reversed_color_map = color_map.reversed()
     for l in np.arange(0,len(date_ALL)):
         fig = plt.figure(figsize=(15,15))
@@ -643,7 +634,7 @@ def map_seaice_argo(presRange,plev_presRange,color_map):
    # qc: variable name for the QC flag value at each recorded position of the Argo float. E.g. platformDf_plev['position_qc']
 
 
-def plot_argo_QC_location(lon,lat,qc):
+def plot_argo_QC_location(platform_number,lon,lat,qc):
     fig, (ax) = plt.subplots(1,1, figsize=(15,10))
     plt.scatter(lon,lat,c=qc,s=80)
     plt.colorbar()
