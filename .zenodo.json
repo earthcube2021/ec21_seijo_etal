@@ -1,0 +1,11 @@
+{
+    "title": "Investigating upper ocean variability during tropical cyclones and seasonal sea ice formation and melting: Argovis APIs exposed to co-locate oceanic and atmospheric datasets",
+    "creators": [
+           {"name": "Giovanni Seijo-Ellis", "affiliation": "Department of Atmospheric and Oceanic Sciences, University of Colorado Boulder, Boulder, CO, United States",  "orcid": "0000-0001-5626-9170"},
+    {"name": "Donata Giglio", "affiliation": "Department of Atmospheric and Oceanic Sciences, University of Colorado Boulder, Boulder, CO, United States",   "orcid": "0000-0002-3738-4293"},
+    {"name": "Sarah Purkey", "affiliation": "CASPO, Scripps Institution of Oceanography, La Jolla, CA, United States.",  "orcid": "0000-0002-1893-6224"},
+    {"name": "Megan Scanderbeg", "affiliation": "CASPO, Scripps Institution of Oceanography, La Jolla, CA, United States.",   "orcid": "0000-0002-0398-7272"},
+    {"name": "Tyler Tucker", "affiliation": "Department of Atmospheric and Oceanic Sciences, University of Colorado Boulder, Boulder, CO, United States",   "orcid": "0000-0002-0560-9777"}  
+    ],
+    "keywords":  ["Argovis","Argo","floats","SOSE","B-SOSE","tropical cyclones”,”sea-ice”,“oceanic profiles”,'hydrographic data","profiling floats","in-situ observations"]
+}
