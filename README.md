@@ -1,3 +1,8 @@
+
+
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.5496351.svg)](https://doi.org/10.5281/zenodo.5496351)
+
+
 # click Binder badge to launch notebook on Binder (no need to install environment):
 [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/gseijo/EC_test/HEAD)
 # Notebook: Investigating upper ocean variability during tropical cyclones and seasonal sea ice formation and melting: Argovis APIs exposed to co-locate oceanic and atmospheric datasets
